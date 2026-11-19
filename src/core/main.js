@@ -7,11 +7,12 @@ import {createPlayerRenderer} from '../rendering/PlayerRenderer.js';
 import {createEffects} from '../effects/VisualEffects.js';
 import {SoundEngine} from '../audio/SoundEngine.js';
 import {ARACHNE_ACTION_TEXT,arachneReplies} from '../content/arachne.js';
+import {ARACHNE_ART} from '../content/AssetManifest.js';
 import {applyManagementAction,stageForStress} from '../simulation/Management.js';
 import {createStatusPanel} from '../ui/StatusPanel.js';
 import {bindInput} from './InputController.js';
 
-(()=>{'use strict';const W=760,H=540,WW=1470,WH=850;const c=document.getElementById('game'),v=document.getElementById('viewport');let ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;const $=id=>document.getElementById(id);const imgs=[0,1,2,3].map(i=>{let x=new Image;x.src=`assets/characters/arachne_${i}.webp`;return x});const keys=new Set();let state='title',dialogue=false,done=false,started=false,last=0,elapsed=0,uiAt=0,toastAt=0,shake=0,samples=0,stress=10,bond=48,feedCount=0,stage=0,monster={x:1162,y:272,targetX:1162,targetY:272,decide:0,path:[],routeTick:0},player={x:235,y:285,dir:0,walk:0},camera={x:0,y:0},flash=0,proximity='',logHistory=[];
+(()=>{'use strict';const W=760,H=540,WW=1470,WH=850;const c=document.getElementById('game'),v=document.getElementById('viewport');let ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;const $=id=>document.getElementById(id);const imgs=ARACHNE_ART.stages.map(src=>{const image=new Image();image.src=src;return image});const keys=new Set();let state='title',dialogue=false,done=false,started=false,last=0,elapsed=0,uiAt=0,toastAt=0,shake=0,samples=0,stress=10,bond=48,feedCount=0,stage=0,monster={x:1162,y:272,targetX:1162,targetY:272,decide:0,path:[],routeTick:0},player={x:235,y:285,dir:0,walk:0},camera={x:0,y:0},flash=0,proximity='',logHistory=[];
 
 /* fx module */
 

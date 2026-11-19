@@ -4,7 +4,7 @@ import {renderActionDecor} from './ActionEffects.js';
 /** Visual event/particle/bubble renderer: no game rules inside. */
 export function createEffects({getContext,getCamera,getMonster,getStage,isPlaying,onImpact,clamp}){
  const $=id=>document.getElementById(id),W=760,H=540;
- let motionTime=0,speech=null,actionAnim=null,fxParticles=[],rageTimer=0,rageIndex=0;
+ let motionTime=0,speech=null,actionAnim=null,fxParticles=[],rageTimer=0;
 const typography=createRageTypography({field:$('screamField')});
 function showSpeech(text,seconds=3.9){if(getStage()===4)return;speech={text,until:motionTime+seconds}}
 function spawnRage(text){typography.spawn(text)}
