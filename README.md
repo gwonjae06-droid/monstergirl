@@ -1,5 +1,7 @@
 # 괴이종 관리일지 (Monster Ward)
 
+🎮 **[게임 실행하기 (GitHub Pages)](https://gwonjae06-droid.github.io/monstergirl/)**
+
 탑뷰 몬무스 관리·괴물화 공포게임. 아라크네 세라가 등장하는 플레이 가능한 웹 프로토타입을 **확장 가능한 ES 모듈 구조**로 분리했습니다.
 
 ## 바로 실행
