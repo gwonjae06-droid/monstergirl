@@ -22,3 +22,6 @@ WASD / 방향키 이동 · Shift 달리기 · E 상호작용 · 관리 패널의
 - `docs` — 확장 절차 및 아트 규칙
 
 기존 프로토타입의 게임 규칙과 실제 4단계 아라크네 스프라이트를 보존했으며, 향후 신규 몬무스는 데이터+이미지+고유 행동을 추가하는 방향으로 확장합니다. 자세한 내용은 `docs/ARCHITECTURE.md`를 참고하세요.
+
+### 더 세분화된 확장 지점
+괴이종 AI는 `simulation/MonsterAI.js`, 변질 시나리오는 `scenario/ArachneScenario.js`, 캐릭터 자세 변형은 `animation/MonsterMotion.js`, 행동/말풍선/분노 활자는 `effects`의 개별 모듈로 분리했습니다. `docs/ARCHITECTURE.md`에서 신규 콘텐츠 작업 순서를 확인하세요.

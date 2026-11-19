@@ -1,15 +1,18 @@
-import {zones,clamp,distance,seeded,allowed,atZone,moveEnt,pathTo} from '../world/Spatial.js';
+import {zones,clamp,distance,seeded,atZone,moveEnt} from '../world/Spatial.js';
+import {updateMonsterAI} from '../simulation/MonsterAI.js';
+import {dispatchArachneStage} from '../scenario/ArachneScenario.js';
 import {createMapRenderer} from '../rendering/MapRenderer.js';
 import {createMonsterRenderer} from '../rendering/MonsterRenderer.js';
 import {createPlayerRenderer} from '../rendering/PlayerRenderer.js';
 import {createEffects} from '../effects/VisualEffects.js';
 import {SoundEngine} from '../audio/SoundEngine.js';
 import {ARACHNE_ACTION_TEXT,arachneReplies} from '../content/arachne.js';
+import {ARACHNE_ART} from '../content/AssetManifest.js';
 import {applyManagementAction,stageForStress} from '../simulation/Management.js';
 import {createStatusPanel} from '../ui/StatusPanel.js';
 import {bindInput} from './InputController.js';
 
-(()=>{'use strict';const W=760,H=540,WW=1470,WH=850;const c=document.getElementById('game'),v=document.getElementById('viewport');let ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;const $=id=>document.getElementById(id);const imgs=[0,1,2,3].map(i=>{let x=new Image;x.src=`assets/characters/arachne_${i}.webp`;return x});const keys=new Set();let state='title',dialogue=false,done=false,started=false,last=0,elapsed=0,uiAt=0,toastAt=0,shake=0,samples=0,stress=10,bond=48,feedCount=0,stage=0,monster={x:1162,y:272,targetX:1162,targetY:272,decide:0,path:[],routeTick:0},player={x:235,y:285,dir:0,walk:0},camera={x:0,y:0},flash=0,proximity='',logHistory=[];
+(()=>{'use strict';const W=760,H=540,WW=1470,WH=850;const c=document.getElementById('game'),v=document.getElementById('viewport');let ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;const $=id=>document.getElementById(id);const imgs=ARACHNE_ART.stages.map(src=>{const image=new Image();image.src=src;return image});const keys=new Set();let state='title',dialogue=false,done=false,started=false,last=0,elapsed=0,uiAt=0,toastAt=0,shake=0,samples=0,stress=10,bond=48,feedCount=0,stage=0,monster={x:1162,y:272,targetX:1162,targetY:272,decide:0,path:[],routeTick:0},player={x:235,y:285,dir:0,walk:0},camera={x:0,y:0},flash=0,proximity='',logHistory=[];
 
 /* fx module */
 
@@ -50,10 +53,13 @@ for(let o of [{x:781,y:728,txt:'격리 장치'},{x:239,y:185,txt:'근무 보고�
 if(flash>0){ctx.fillStyle=`rgba(230,46,70,${flash*.35})`;ctx.fillRect(0,0,W,H)}ctx.restore()}
 
 /* move module */
-function setStage(next){if(next===stage)return;let old=stage;stage=next;flash=1;shake=next>2?13:3;if(next===1){record('세라의 눈동자가 오래도록 당신을 따라옵니다.');showSpeech('괜찮아요... 만지지만 마세요.',4)}else if(next===2){record('등 뒤에 달린 다리들이 기이한 각도로 꺾이기 시작합니다.');showSpeech('내 거미줄에 손대지 말랬잖아요!',4);}else if(next===3){record('세라가 더는 인간의 모습으로 서 있지 못합니다.');showSpeech('한 번만 더 건드리면... 가만 안 둬!',4);}else if(next===4){record('격리 실패! 아라크네가 폭주했습니다.');say('⚠ 세라 폭주! 관제실의 봉쇄 장치로 달리세요!');$('viewport').classList.add('redmode');monster.path=[];dialogue=false;fx.speech=null;fx.rageTimer=.55;spawnRage('내 둥지를 짓밟아 놓고 어딜 도망가!!');spawnRage('거기 서!!!');spawnRage('용서 안 해!!!');addFX('rage',monster.x,monster.y,80)}else if(next<old){record('개체의 이상징후가 일부 완화되었습니다.')};$('portrait').src=imgs[stage===4?3:stage===3?2:stage].src;updateUI(true)}
-function updateMonster(dt){if(stage===4){monster.routeTick-=dt;if(monster.routeTick<=0){monster.routeTick=.6;monster.path=pathTo(monster,player)}let point=monster.path[0]||player;if(distance(monster.x,monster.y,point.x,point.y)<15&&monster.path.length>1){monster.path.shift();point=monster.path[0]};let dx=point.x-monster.x,dy=point.y-monster.y,d=Math.hypot(dx,dy);if(d>1){let speed=123;moveEnt(monster,dx/d*speed*dt,dy/d*speed*dt)}if(distance(monster.x,monster.y,player.x,player.y)<31){finish(false,'세라의 다리가 당신의 그림자에 닿았습니다. 마지막으로 들린 것은 낯익은 웃음소리였습니다.')}}else{monster.decide-=dt;if(monster.decide<=0){monster.decide=2.3+seeded(elapsed*10,2)*3;monster.targetX=clamp(1120+Math.sin(elapsed*2)*100,1060,1295);monster.targetY=clamp(280+Math.cos(elapsed*1.7)*60,188,358)}let dx=monster.targetX-monster.x,dy=monster.targetY-monster.y,d=Math.hypot(dx,dy);if(d>6){monster.x+=dx/d*12*dt;monster.y+=dy/d*12*dt}}}
+function setStage(next){if(next===stage)return;const old=stage;stage=next;flash=1;shake=next>2?13:3;
+if(next===4){monster.path=[];dialogue=false;fx.speech=null;fx.rageTimer=.55;$('viewport').classList.add('redmode')}
+dispatchArachneStage({next,old,record,say,showSpeech,spawnRage,addFX,monster});
+$('portrait').src=imgs[stage===4?3:stage===3?2:stage].src;updateUI(true)}
+
 function tick(dt){if(state!=='play'||dialogue)return;elapsed+=dt;flash=Math.max(0,flash-1.6*dt);shake=Math.max(0,shake-17*dt);let dx=Number(keys.has('ArrowRight')||keys.has('d'))-Number(keys.has('ArrowLeft')||keys.has('a')),dy=Number(keys.has('ArrowDown')||keys.has('s'))-Number(keys.has('ArrowUp')||keys.has('w'));let mag=Math.hypot(dx,dy);if(mag){let speed=keys.has('Shift')?213:144;moveEnt(player,dx/mag*dt*speed,dy/mag*dt*speed);player.walk+=dt*(keys.has('Shift')?2.4:1);player.dir=dx<0?1:0}else player.walk=0;
-if(stage<4 && elapsed>65)stress=Math.min(100,stress+dt*.18);let next=stageForStress(stress);if(next!==stage)setStage(next);updateMonster(dt);
+if(stage<4 && elapsed>65)stress=Math.min(100,stress+dt*.18);let next=stageForStress(stress);if(next!==stage)setStage(next);updateMonsterAI({monster,player,stage,elapsed,dt,onCapture:msg=>finish(false,msg)});
 camera.x=clamp(player.x-W*.5,0,WW-W);camera.y=clamp(player.y-H*.55,0,WH-H);
 if(elapsed-uiAt>.12){uiAt=elapsed;updateUI(false)}if(elapsed>toastAt && toastAt!==0 && stage<4){$('hint').textContent='WASD 이동 · Shift 달리기 · E 상호작용';toastAt=0}
 let z=atZone(player.x,player.y);if($('zoneName').textContent!==z)$('zoneName').textContent=z;

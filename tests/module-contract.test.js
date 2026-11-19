@@ -8,8 +8,15 @@ import {createStatusPanel} from '../src/ui/StatusPanel.js';
 import {bindInput} from '../src/core/InputController.js';
 import {SoundEngine} from '../src/audio/SoundEngine.js';
 import {ANIMATION_PRESETS} from '../src/animation/AnimationPresets.js';
+import {computeMonsterPose} from '../src/animation/MonsterMotion.js';
+import {renderActionDecor} from '../src/effects/ActionEffects.js';
+import {renderSpeechBubble} from '../src/effects/SpeechBubble.js';
+import {createRageTypography} from '../src/effects/RageTypography.js';
+import {updateMonsterAI} from '../src/simulation/MonsterAI.js';
+import {dispatchArachneStage} from '../src/scenario/ArachneScenario.js';
 test('subsystems expose separate extension entry points',()=>{
  for(const fn of [createMapRenderer,createMonsterRenderer,createPlayerRenderer,createEffects,createStatusPanel,bindInput])assert.equal(typeof fn,'function');
  assert.equal(typeof SoundEngine,'function');
  assert.ok(ANIMATION_PRESETS.mutate.fps);
+ for(const fn of [computeMonsterPose,renderActionDecor,renderSpeechBubble,createRageTypography,updateMonsterAI,dispatchArachneStage])assert.equal(typeof fn,'function');
 });
