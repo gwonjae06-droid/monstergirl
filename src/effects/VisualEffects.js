@@ -1,21 +1,19 @@
-import {ARACHNE_RAGE_LINES} from '../content/arachne.js';
+import {createRageTypography} from './RageTypography.js';
+import {renderSpeechBubble} from './SpeechBubble.js';
+import {renderActionDecor} from './ActionEffects.js';
 /** Visual event/particle/bubble renderer: no game rules inside. */
 export function createEffects({getContext,getCamera,getMonster,getStage,isPlaying,onImpact,clamp}){
  const $=id=>document.getElementById(id),W=760,H=540;
  let motionTime=0,speech=null,actionAnim=null,fxParticles=[],rageTimer=0,rageIndex=0;
-const rageLines=ARACHNE_RAGE_LINES;
-const rageSpots=[[12,16],[58,30],[27,58],[46,75],[6,74],[62,13],[29,30],[9,43],[50,52],[17,82]];
+const typography=createRageTypography({field:$('screamField')});
 function showSpeech(text,seconds=3.9){if(getStage()===4)return;speech={text,until:motionTime+seconds}}
-function spawnRage(text){const field=$('screamField');if(field.childElementCount>=9)field.firstElementChild.remove();const el=document.createElement('span');el.className='rage-word '+(rageIndex%4===0?'big':rageIndex%3===0?'small':'');el.textContent=text||rageLines[rageIndex%rageLines.length];const [left,top]=rageSpots[rageIndex%rageSpots.length];el.style.left=left+'%';el.style.top=top+'%';el.style.setProperty('--duration',(2.1+(rageIndex%3)*.37)+'s');field.appendChild(el);el.addEventListener('animationend',()=>el.remove(),{once:true});rageIndex++}
+function spawnRage(text){typography.spawn(text)}
 function addFX(type,px,py,count){const colors={talk:['#ffbbd1','#f9a7e9','#fff4e9'],feed:['#ffd779','#ffab9e','#fff8d3'],sample:['#e0d7ef','#f5eaff','#c9b5d4'],nest:['#ed4357','#af3048','#deb2b7'],rage:['#f12f53','#ff7b8d','#77203e']};let cs=colors[type]||colors.talk;for(let i=0;i<count;i++){let a=i*2.399+Math.random()*.4,vel=22+Math.random()*62;fxParticles.push({x:px+(Math.random()-.5)*30,y:py-45+(Math.random()-.5)*28,vx:Math.cos(a)*vel,vy:Math.sin(a)*vel-18,max:.8+Math.random()*.7,life:.8+Math.random()*.7,size:2+Math.random()*3,color:cs[i%cs.length],kind:type})}if(fxParticles.length>180)fxParticles.splice(0,fxParticles.length-180)}
 function triggerActionFX(type){actionAnim={type,at:motionTime,duration:type==='nest'?2.3:type==='sample'?1.9:1.65};addFX(type,getMonster().x,getMonster().y,type==='nest'?36:type==='sample'?25:18);if(type==='nest'){onImpact(12,.65)}}
 function animateVisuals(dt){motionTime+=dt;for(const p of fxParticles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.kind==='nest'?42:14)*dt;p.vx*=Math.pow(.9,dt*10)}fxParticles=fxParticles.filter(p=>p.life>0);if(actionAnim&&motionTime-actionAnim.at>actionAnim.duration)actionAnim=null;if(isPlaying()&&getStage()===4){rageTimer-=dt;if(rageTimer<=0){rageTimer=1.05+Math.random()*.6;spawnRage()}}}
-function drawActionDecor(mx,my,px,py){const ctx=getContext();if(!actionAnim)return;let age=motionTime-actionAnim.at,progress=clamp(age/actionAnim.duration,0,1),type=actionAnim.type;ctx.save();if(type==='sample'){ctx.strokeStyle='#f3d9f0';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);for(let k=0;k<4;k++){ctx.beginPath();ctx.moveTo(mx+(k-1.5)*9,my-60);ctx.quadraticCurveTo((mx+px)/2+(k-1)*10,(my+py)/2-65+Math.sin(age*13+k)*12,px,py-28);ctx.stroke()}ctx.setLineDash([]);ctx.fillStyle='#fff4ff';ctx.font='bold 13px sans-serif';ctx.fillText('✦',mx+25,my-90-Math.sin(age*6)*8)}
-if(type==='nest'){for(let j=0;j<3;j++){let r=15+progress*(55+j*26);ctx.globalAlpha=(1-progress)*.6;ctx.beginPath();ctx.ellipse(mx,my-55,r,r*.52,0,0,Math.PI*2);ctx.strokeStyle=j%2?'#f48ea0':'#d4adb3';ctx.lineWidth=2;ctx.stroke()}ctx.globalAlpha=1;for(let k=0;k<6;k++){ctx.strokeStyle='#dfbbc7';ctx.lineWidth=1.2;let angle=k*1.04+age*2;ctx.beginPath();ctx.moveTo(mx+Math.cos(angle)*18,my-48+Math.sin(angle)*12);ctx.lineTo(mx+Math.cos(angle)*65,my-48+Math.sin(angle)*44);ctx.stroke()}}
-if(type==='feed'){ctx.fillStyle='#a56b61';ctx.fillRect(mx-27,my-9,54,7);ctx.fillStyle='#ead9c4';ctx.fillRect(mx-20,my-15,40,6);ctx.fillStyle='#e4ad65';ctx.fillRect(mx-11,my-28+Math.sin(age*12)*3,21,12);ctx.fillStyle='#fff0d1';ctx.fillRect(mx-3,my-32+Math.sin(age*12)*3,7,7)}
-if(type==='talk'){ctx.globalAlpha=(1-progress)*.7;ctx.strokeStyle='#ffd6e2';ctx.lineWidth=2;ctx.beginPath();ctx.arc(mx,my-65,32+progress*32,0,Math.PI*2);ctx.stroke()}ctx.restore()}
+function drawActionDecor(mx,my,px,py){renderActionDecor({ctx:getContext(),mx,my,px,py,actionAnim,motionTime,clamp})}
 function drawFXParticles(){const ctx=getContext(),camera=getCamera();const f=(x,y,w,h,color)=>{ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};for(let p of fxParticles){let x=p.x-camera.x,y=p.y-camera.y;if(x<-10||x>W+10||y<-10||y>H+10)continue;ctx.globalAlpha=clamp(p.life/p.max,0,1);f(x,y,p.size,p.size,p.color);if(p.kind==='feed'||p.kind==='talk'){f(x-2,y+1,p.size+4,1,'#fff2f1')}}ctx.globalAlpha=1}
-function drawSpeechBubble(x,y,text){const ctx=getContext();if(!text||getStage()===4)return;ctx.save();ctx.font='bold 15px "Gowun Dodum",sans-serif';const lines=[];let line='';for(const ch of text){if(ctx.measureText(line+ch).width>238&&line){lines.push(line);line=ch}else{line+=ch}}if(line)lines.push(line);const bw=Math.min(270,Math.max(120,...lines.map(l=>ctx.measureText(l).width+24))),bh=22+lines.length*21,xx=clamp(x-bw/2,9,W-bw-9),yy=clamp(y-bh-15,9,H-bh-34);ctx.shadowColor='#170812';ctx.shadowBlur=8;ctx.fillStyle='#f7e1d9';ctx.fillRect(xx,yy,bw,bh);ctx.shadowBlur=0;ctx.lineWidth=3;ctx.strokeStyle='#51313e';ctx.strokeRect(xx,yy,bw,bh);ctx.beginPath();let tx=clamp(x,xx+15,xx+bw-15);ctx.moveTo(tx-7,yy+bh-1);ctx.lineTo(tx,yy+bh+10);ctx.lineTo(tx+7,yy+bh-1);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#4c2538';ctx.textAlign='center';lines.forEach((l,i)=>ctx.fillText(l,xx+bw/2,yy+25+i*21));ctx.textAlign='left';ctx.restore()}
+function drawSpeechBubble(x,y,text){renderSpeechBubble({ctx:getContext(),x,y,text,stage:getStage(),clamp})}
 
  return {showSpeech,spawnRage,addFX,triggerActionFX,animateVisuals,drawActionDecor,drawFXParticles,drawSpeechBubble,
    get motionTime(){return motionTime},set motionTime(v){motionTime=v},
@@ -23,6 +21,6 @@ function drawSpeechBubble(x,y,text){const ctx=getContext();if(!text||getStage()=
    get actionAnim(){return actionAnim},set actionAnim(v){actionAnim=v},
    get fxParticles(){return fxParticles},set fxParticles(v){fxParticles=v},
    get rageTimer(){return rageTimer},set rageTimer(v){rageTimer=v},
-   get rageIndex(){return rageIndex},set rageIndex(v){rageIndex=v}
+   get rageIndex(){return typography.index},set rageIndex(v){typography.index=v}
  };
 }
